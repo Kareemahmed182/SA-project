@@ -2,159 +2,161 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-
 
 public class ConferenceGUI {
     private JFrame frame;
     private JTabbedPane tabbedPane;
-    private List<Session> sessionList;
-    private List<Attendee> attendeeList;
+    private LoginManager loginManager;
+    private User currentUser;
 
     public ConferenceGUI() {
-        // Initialize JFrame
+        // Initialize LoginManager
+        loginManager = new LoginManager();
+
+        // Initialize JFrame and TabbedPane
         frame = new JFrame("GAF-AI 2025 Conference");
         frame.setSize(800, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Initialize session and attendee lists
-        sessionList = new ArrayList<>();
-        attendeeList = new ArrayList<>();
-
-        // Create Tabbed Pane for different panels
         tabbedPane = new JTabbedPane();
 
-        // Add panels for each tab
-        tabbedPane.addTab("Home", createHomePanel());
-        tabbedPane.addTab("Registration", createRegistrationPanel());
-        tabbedPane.addTab("Sessions", createSessionManagementPanel());
-        tabbedPane.addTab("Feedback", createFeedbackPanel());
+        // Add login panel as the first tab
+        JPanel loginPanel = createLoginPanel();
+        tabbedPane.addTab("Login", loginPanel);
 
         // Add TabbedPane to the frame
         frame.add(tabbedPane);
         frame.setVisible(true);
     }
 
-    private JPanel createHomePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private JPanel createLoginPanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 2));
 
-        JButton btnRegister = new JButton("Register for Conference");
-        JButton btnSessions = new JButton("Manage Sessions");
-        JButton btnExit = new JButton("Exit");
+        JLabel lblUsername = new JLabel("Username:");
+        JTextField txtUsername = new JTextField();
+        JLabel lblPassword = new JLabel("Password:");
+        JPasswordField txtPassword = new JPasswordField();
 
-        btnRegister.addActionListener(e -> tabbedPane.setSelectedIndex(1)); // Switch to Registration Tab
-        btnSessions.addActionListener(e -> tabbedPane.setSelectedIndex(2)); // Switch to Session Management Tab
-        btnExit.addActionListener(e -> System.exit(0));
+        JButton btnLogin = new JButton("Login");
+        JButton btnRegister = new JButton("Register");
 
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        buttonPanel.add(btnRegister);
-        buttonPanel.add(btnSessions);
-        buttonPanel.add(btnExit);
-
-        panel.add(buttonPanel, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private JPanel createRegistrationPanel() {
-        JPanel panel = new JPanel(new GridLayout(3, 2));
-
-        JLabel lblName = new JLabel("Name:");
-        JTextField txtName = new JTextField();
-        JLabel lblEmail = new JLabel("Email:");
-        JTextField txtEmail = new JTextField();
-        JButton btnSubmit = new JButton("Submit Registration");
-
-        btnSubmit.addActionListener(new ActionListener() {
+        // Action listener for login
+        btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String name = txtName.getText();
-                String email = txtEmail.getText();
-                if (!name.isEmpty() && !email.isEmpty()) {
-                    // Create a new attendee and add to the list
-                    Attendee attendee = new Attendee(String.valueOf(System.currentTimeMillis()), name, email);
-                    attendeeList.add(attendee);
-                    JOptionPane.showMessageDialog(frame, "Registration Successful!");
-                    tabbedPane.setSelectedIndex(0); // Go back to Home Tab
+                String username = txtUsername.getText();
+                String password = new String(txtPassword.getPassword());
+
+                // Check login credentials
+                User user = loginManager.login(username, password);
+
+                if (user != null) {
+                    currentUser = user;
+                    JOptionPane.showMessageDialog(frame, "Login successful!");
+
+                    // Navigate to appropriate home page based on the role
+                    goToHomePage();
                 } else {
-                    JOptionPane.showMessageDialog(frame, "Please fill in all fields.");
+                    // Show error message for failed login
+                    JOptionPane.showMessageDialog(frame, "Invalid credentials, try again.");
+
+                    // Reset the login fields after failed attempt
+                    txtUsername.setText("");  // Clear the username field
+                    txtPassword.setText("");  // Clear the password field
+                    txtUsername.requestFocus();  // Focus back to username field
                 }
             }
         });
 
-        panel.add(lblName);
-        panel.add(txtName);
-        panel.add(lblEmail);
-        panel.add(txtEmail);
-        panel.add(new JLabel());
-        panel.add(btnSubmit);
+        // Action listener for register
+        btnRegister.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = txtUsername.getText();
+                String password = new String(txtPassword.getPassword());
+                String role = JOptionPane.showInputDialog(frame, "Enter role (Manager/Attendee):");
+
+                // Register new user
+                loginManager.register(username, password, role);
+                JOptionPane.showMessageDialog(frame, "Registration successful!");
+            }
+        });
+
+        // Add components to the panel
+        panel.add(lblUsername);
+        panel.add(txtUsername);
+        panel.add(lblPassword);
+        panel.add(txtPassword);
+        panel.add(btnLogin);
+        panel.add(btnRegister);
 
         return panel;
     }
 
-    private JPanel createSessionManagementPanel() {
+    private void goToHomePage() {
+        tabbedPane.removeAll(); // Remove the login panel
+
+        // After login, show the appropriate home page based on the user's role
+        if (currentUser.getRole().equals("Manager")) {
+            tabbedPane.addTab("Manager Home", createManagerHomePanel());
+        } else {
+            tabbedPane.addTab("Attendee Home", createAttendeeHomePanel());
+        }
+    }
+
+    private JPanel createManagerHomePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        String[] columns = {"ID", "Name", "Speaker", "Date", "Time", "Location"};
-        String[][] data = {
-                {"101", "Introduction to AI", "Dr. Smith", "2024-12-01", "10:00 AM", "Room A"},
-                {"102", "Advanced AI", "Dr. Johnson", "2024-12-02", "2:00 PM", "Room B"}
-        };
+        JButton btnManageSessions = new JButton("Manage Sessions");
+        JButton btnLogout = new JButton("Logout");
 
-        JTable sessionTable = new JTable(data, columns);
-        JScrollPane scrollPane = new JScrollPane(sessionTable);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        // Add buttons for managing sessions
-        JPanel buttonsPanel = new JPanel();
-        JButton btnAddSession = new JButton("Add Session");
-        JButton btnViewSession = new JButton("View Session");
-
-        btnAddSession.addActionListener(e -> {
-            // Example: You can add more logic here for adding a session
-            JOptionPane.showMessageDialog(frame, "Add Session functionality here.");
-        });
-
-        btnViewSession.addActionListener(e -> {
-            // View session details (placeholder for now)
-            int selectedRow = sessionTable.getSelectedRow();
-            if (selectedRow != -1) {
-                String sessionId = (String) sessionTable.getValueAt(selectedRow, 0);
-                JOptionPane.showMessageDialog(frame, "Viewing Session: " + sessionId);
-            } else {
-                JOptionPane.showMessageDialog(frame, "Please select a session.");
+        btnManageSessions.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Manager session management functionality
+                JOptionPane.showMessageDialog(frame, "Managing sessions...");
             }
         });
 
-        buttonsPanel.add(btnAddSession);
-        buttonsPanel.add(btnViewSession);
-        panel.add(buttonsPanel, BorderLayout.SOUTH);
+        btnLogout.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                currentUser = null;
+                JOptionPane.showMessageDialog(frame, "Logged out successfully!");
+                tabbedPane.setSelectedIndex(0); // Go back to login
+            }
+        });
+
+        panel.add(btnManageSessions, BorderLayout.CENTER);
+        panel.add(btnLogout, BorderLayout.SOUTH);
 
         return panel;
     }
 
-    private JPanel createFeedbackPanel() {
+    private JPanel createAttendeeHomePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // Simple feedback submission interface
-        JTextArea feedbackArea = new JTextArea(5, 20);
-        JScrollPane scrollPane = new JScrollPane(feedbackArea);
-        JButton submitFeedbackButton = new JButton("Submit Feedback");
+        JButton btnSubmitFeedback = new JButton("Submit Feedback");
+        JButton btnLogout = new JButton("Logout");
 
-        submitFeedbackButton.addActionListener(e -> {
-            String feedback = feedbackArea.getText();
-            if (!feedback.isEmpty()) {
-                // Store feedback (this could be saved to a file or list)
-                JOptionPane.showMessageDialog(frame, "Feedback submitted: " + feedback);
-                feedbackArea.setText(""); // Clear the feedback area
-            } else {
-                JOptionPane.showMessageDialog(frame, "Please write some feedback.");
+        btnSubmitFeedback.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Attendee feedback submission functionality
+                JOptionPane.showMessageDialog(frame, "Submitting feedback...");
             }
         });
 
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(submitFeedbackButton, BorderLayout.SOUTH);
+        btnLogout.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                currentUser = null;
+                JOptionPane.showMessageDialog(frame, "Logged out successfully!");
+                tabbedPane.setSelectedIndex(0); // Go back to login
+            }
+        });
+
+        panel.add(btnSubmitFeedback, BorderLayout.CENTER);
+        panel.add(btnLogout, BorderLayout.SOUTH);
 
         return panel;
     }
