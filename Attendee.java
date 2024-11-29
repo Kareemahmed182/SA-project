@@ -7,6 +7,7 @@ public class Attendee implements UserInterface {
     private String email;
     private List<Session> schedule;
 
+    // Constructor
     public Attendee(String id, String name, String email) {
         this.id = id;
         this.name = name;
@@ -14,12 +15,13 @@ public class Attendee implements UserInterface {
         this.schedule = new ArrayList<>();
     }
 
-    // Implementing register method from the User interface
+    // Implementing register method from UserInterface
     @Override
     public void register() {
         System.out.println("Attendee registered: " + this.name);
     }
 
+    // Implementing login method from UserInterface
     @Override
     public void login() {
         System.out.println("Attendee logged in: " + this.name);
@@ -38,9 +40,11 @@ public class Attendee implements UserInterface {
     public String getId() {
         return id;
     }
+
     public String getName() {
         return name;
     }
+
     public String getEmail() {
         return email;
     }

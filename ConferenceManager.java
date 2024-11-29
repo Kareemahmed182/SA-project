@@ -1,34 +1,38 @@
-import java.util.List;
-
 public class ConferenceManager implements UserInterface {
-    private String id;
-    private String name;
-    private String email;
+    private ConferenceManagementSystem cms;
 
-    public ConferenceManager(String id, String name, String email) {
-        this.id = id;
-        this.name = name;
-        this.email = email;
+    // Constructor that takes the ConferenceManagementSystem object
+    public ConferenceManager(ConferenceManagementSystem cms) {
+        this.cms = cms;
     }
 
+    // Implementing register method from UserInterface
     @Override
     public void register() {
-        System.out.println("Conference Manager registered: " + this.name);
+        System.out.println("Conference Manager registered.");
     }
 
+    // Implementing login method from UserInterface
     @Override
     public void login() {
-        System.out.println("Conference Manager logged in: " + this.name);
+        System.out.println("Conference Manager logged in.");
     }
 
-    // Method to create a new session
-    public void createSession(Session session, List<Session> sessionList) {
-        sessionList.add(session);
-        System.out.println("Session created: " + session.getName());
+    // Methods for managing sessions
+    public void createSession(String name, String description, String date, String time, String location, Speaker speaker) {
+        Session session = new Session(name, description, date, time, location, speaker);
+        cms.addSession(session);
     }
 
-    // Method to manage session details
-    public void manageSession(Session session) {
-        System.out.println("Managing session: " + session.getName());
+    public void openSession(String sessionName) {
+        cms.openSession(sessionName);
+    }
+
+    public void closeSession(String sessionName) {
+        cms.closeSession(sessionName);
+    }
+
+    public void notifyAllAttendees(String message) {
+        cms.notifyAllAttendees(message);
     }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 public class SessionRepository implements Repository<Session> {
     private static final String FILE_NAME = "sessions.txt";
 
+    // Ensure the file exists
     private void ensureFileExists() {
         try {
             File file = new File(FILE_NAME);
@@ -16,12 +17,35 @@ public class SessionRepository implements Repository<Session> {
         }
     }
 
+    // Serialize a session into a CSV line
+    private String serializeSession(Session session) {
+        String speakerName = session.getSpeaker() != null ? session.getSpeaker().getName() : "None";
+        return String.join(",",
+                session.getId(),
+                session.getName(),
+                speakerName,
+                session.getDate(),
+                session.getTime(),
+                session.getLocation()
+        );
+    }
+
+    // Deserialize a CSV line into a Session object
+    private Session deserializeSession(String line) {
+        String[] parts = line.split(",");
+        if (parts.length == 6) {
+            Speaker speaker = parts[2].equals("None") ? null : new Speaker(parts[2], "No bio available");
+            return new Session(parts[0], parts[1], parts[3], parts[4], parts[5], speaker);
+        }
+        System.err.println("Skipping malformed line: " + line);
+        return null;
+    }
+
     @Override
     public void save(Session session) {
         ensureFileExists();
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME, true))) {
-            writer.write(session.getId() + "," + session.getName() + "," + session.getSpeaker() + "," +
-                    session.getDate() + "," + session.getTime() + "," + session.getLocation());
+            writer.write(serializeSession(session));
             writer.newLine();
         } catch (IOException e) {
             System.err.println("Error saving session: " + e.getMessage());
@@ -35,11 +59,9 @@ public class SessionRepository implements Repository<Session> {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 6) {
-                    sessions.add(new Session(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]));
-                } else {
-                    System.err.println("Skipping malformed line: " + line);
+                Session session = deserializeSession(line);
+                if (session != null) {
+                    sessions.add(session);
                 }
             }
         } catch (IOException e) {
@@ -50,7 +72,10 @@ public class SessionRepository implements Repository<Session> {
 
     @Override
     public Session findById(String id) {
-        return findAll().stream().filter(s -> s.getId().equals(id)).findFirst().orElse(null);
+        return findAll().stream()
+                .filter(session -> session.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -60,11 +85,9 @@ public class SessionRepository implements Repository<Session> {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
             for (Session s : sessions) {
                 if (s.getId().equals(session.getId())) {
-                    writer.write(session.getId() + "," + session.getName() + "," + session.getSpeaker() + "," +
-                            session.getDate() + "," + session.getTime() + "," + session.getLocation());
+                    writer.write(serializeSession(session));
                 } else {
-                    writer.write(s.getId() + "," + s.getName() + "," + s.getSpeaker() + "," +
-                            s.getDate() + "," + s.getTime() + "," + s.getLocation());
+                    writer.write(serializeSession(s));
                 }
                 writer.newLine();
             }
@@ -82,10 +105,9 @@ public class SessionRepository implements Repository<Session> {
         List<Session> sessions = findAll();
         File tempFile = new File("temp_sessions.txt");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-            for (Session s : sessions) {
-                if (!s.getId().equals(id)) {
-                    writer.write(s.getId() + "," + s.getName() + "," + s.getSpeaker() + "," +
-                            s.getDate() + "," + s.getTime() + "," + s.getLocation());
+            for (Session session : sessions) {
+                if (!session.getId().equals(id)) {
+                    writer.write(serializeSession(session));
                     writer.newLine();
                 }
             }
