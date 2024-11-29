@@ -1,14 +1,34 @@
-public class ConferenceManager extends User {
+import java.util.List;
+
+public class ConferenceManager implements UserInterface {
+    private String id;
+    private String name;
+    private String email;
+
     public ConferenceManager(String id, String name, String email) {
-        super(id, name, email);
+        this.id = id;
+        this.name = name;
+        this.email = email;
     }
 
-    public void createSession(Session session, ConferenceManagementSystem cms) {
-        cms.addSession(session);
+    @Override
+    public void register() {
+        System.out.println("Conference Manager registered: " + this.name);
     }
 
-    public void generateCertificate(Attendee attendee) {
-        Certificate cert = new Certificate(attendee.getName(), attendee.getId());
-        cert.generate();
+    @Override
+    public void login() {
+        System.out.println("Conference Manager logged in: " + this.name);
+    }
+
+    // Method to create a new session
+    public void createSession(Session session, List<Session> sessionList) {
+        sessionList.add(session);
+        System.out.println("Session created: " + session.getName());
+    }
+
+    // Method to manage session details
+    public void manageSession(Session session) {
+        System.out.println("Managing session: " + session.getName());
     }
 }
